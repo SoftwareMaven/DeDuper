@@ -28,5 +28,21 @@ def process_args():
         return options, paths
 
 options, paths = process_args()
+ignore_list = []
+if options.ignore:
+    with open(options.ignore, 'r') as f:
+        ignore_list = list(f.readlines())
 
-context = find_duplicates(paths, include_suspected=options.suspected)
+if options.report:
+    path_count = 0
+    def progress_func(path, dups_found):
+        global path_count
+        path_count += 1
+        if path_count % 5 == 0:
+            print('Processing: {path} [{dups_found} duplicates found]'.format(**locals()))
+    progress = progress_func
+else:
+    progress = None
+
+context = find_duplicates(paths, include_suspected=options.suspected,
+                          ignore_re_list=ignore_list, progress=progress)

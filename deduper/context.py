@@ -25,7 +25,7 @@ class DuplicatesContext:
                  (depth is not implemented yet)
         '''
         for dirpath, dirnames, filenames in os.walk(path):
-
+            pass
 
     @classmethod
     def store(cls, context, path=None):
