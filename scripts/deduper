@@ -1,3 +1,32 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+import sys
 
-# This is the entry point. Yay.
+import deduper
+
+def process_args():
+    from optparse import OptionParser
+    usage = 'usage: %prog [options] path1 [path2...]'
+    parser = OptionParser(usage=usage)
+    parser.add_option("-r", "--report", dest="report", action="store_true", default=True,
+                      help="Print report of known and suspected duplicates [Default]",)
+    parser.add_option("-q", "--quiet", dest="report", action="store_false",
+                      help="Shhh, be vewy, vewy quiet. (not recommended)",)
+    parser.add_option("-i", "--ignore", dest="ignore", action="store", metavar='IGNORE_FILE',
+                      help="List of regular expressions of files to ignore", default=None)
+    parser.add_option("-d", "--delete", action="store_true", dest="delete", default=False,
+                      help="Delete duplicates",)
+    parser.add_option("-s", "--suspected", action="store_true",
+                      default=False, dest="suspected",
+                      help="Try to find duplicates using more than the file's bits",)
+
+    (options, paths) = parser.parse_args()
+
+    if len(paths) == 0:
+        print('At least one directory to look in is required', file=sys.stderr)
+        exit(2)
+    else:
+        return options, paths
+
+options, paths = process_args()
+
+context = find_duplicates(paths, include_suspected=options.suspected)

@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 
-dependencies = ['mutagen',]
+dependencies = ['stagger','smhasher',]
 packages = ['deduper',]
 scripts = ['scripts/deduper',]
 setup(name='DeDuper',
@@ -11,7 +11,7 @@ setup(name='DeDuper',
       author='Travis Jensen',
       author_email='travis.jense@gmail.com',
       url='https://github.com/SoftwareMaven/DeDuper',
-      packages=packates,
+      packages=packages,
       scripts=scripts,
       requires=dependencies,
      )
