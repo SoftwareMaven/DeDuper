@@ -13,6 +13,9 @@ def process_args():
                       help="Shhh, be vewy, vewy quiet. (not recommended)",)
     parser.add_option("-i", "--ignore", dest="ignore", action="store", metavar='IGNORE_FILE',
                       help="List of regular expressions of files to ignore", default=None)
+    parser.add_option("-m", "--minimum", dest="minimum", action="store", type="int",
+                      metavar='MINIMUM_FILE_SIZE', default=4096,
+                      help="Minimum size file to care about. [Default=1024 bytes]")
     parser.add_option("-d", "--delete", action="store_true", dest="delete", default=False,
                       help="Delete duplicates",)
     parser.add_option("-s", "--suspected", action="store_true",
@@ -38,11 +41,16 @@ if options.report:
     def progress_func(path, dups_found):
         global path_count
         path_count += 1
-        if path_count % 5 == 0:
+        if path_count % 50 == 0:
             print('Processing: {path} [{dups_found} duplicates found]'.format(**locals()))
     progress = progress_func
 else:
     progress = None
 
-context = find_duplicates(paths, include_suspected=options.suspected,
-                          ignore_re_list=ignore_list, progress=progress)
+context = deduper.find_duplicates(paths, find_suspected=options.suspected,
+                                  ignore_re_list=ignore_list, progress=progress,
+                                  min_file_size=options.minimum)
+
+if options.report:
+    for wrap1, wrap2 in context.duplicates:
+        print('{} == {}'.format(str(wrap1), str(wrap2)))

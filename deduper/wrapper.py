@@ -3,44 +3,54 @@ import os.path
 
 import smhasher
 
-BLOCKSIZE = 4096 * 1024 # 4k blocks for reading
+from .decorators import reify
 
-class FileWrapper:
+BIG_BLOCKSIZE = 16 * 1024 # 16k blocks for the full hash
+SMALL_BLOCKSIZE = 4 * 1024 # 4k blocks for the first block hash
+
+def get_wrapper_for_file(path):
+    return GenericFileWrapper(path)
+
+class GenericFileWrapper:
     seed = 11223344
 
-    def __init__(self, dirpath, fname):
-        self.dirpath = dirpath
-        self.fname = fname
-        s = os.stat(os.path.sep.join((dirpath, fname)))
+    def __init__(self, path):
+        self.path = path
+        s = os.stat(self.path)
         self.size = s.st_size
         self.modtime = s.st_mtime
-        self.hash = None
+
+    def __str__(self):
+        return self.path
 
     def __eq__(self, o):
-        if self.size == o.size:
-            if self.fname == o.fname and self.modtime == o.modtime:
-                return True
-            else:
-                if not self.hash:
-                    self._genhash()
-                if not o.hash:
-                    o._genhash()
-                return self.hash == o.hash
+        if self.size == o.size and self.first_block_hash == o.first_block_hash:
+            return self.hash == o.hash
         else:
             return False
 
     def __ne__(self, o):
         return not self.__eq__(o)
 
-    __hash__ = object.__hash__
+    def __hash__():
+        return self.first_block_hash
 
-    def _genhash(self):
-        hash_ = 0
+    @reify
+    def first_block_hash(self):
+        with open(self.path, 'rb') as f:
+            data = f.read(SMALL_BLOCKSIZE)
+            return smhasher.murmur3_x86_128(data, GenericFileWrapper.seed)
+
+    @reify
+    def hash(self):
+        """ The full hash of the file """
+        hash_ = self.size
         blocks = 0
-        with open(os.path.sep.join((self.dirpath, self.fname)), 'rb') as f:
-            data = f.read(BLOCKSIZE)
+        with open(self.path, 'rb') as f:
+            data = f.read(BIG_BLOCKSIZE)
             while data:
-                next_hash = smhasher.murmur3_x86_128(data, FileWrapper.seed)
+                next_hash = smhasher.murmur3_x86_128(data, GenericFileWrapper.seed)
                 hash_ ^= (next_hash << blocks)
-                data = f.read(BLOCKSIZE)
-        self.hash = hash_
+                data = f.read(BIG_BLOCKSIZE)
+                blocks = blocks + 1 if blocks < 16 else 0
+        return hash_
