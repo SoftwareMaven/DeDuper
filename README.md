@@ -23,5 +23,5 @@ DeDuper lets you decide how to handle the duplicates.
 Dependencies
 ------------
 
-* DeDuper is written using Python 3.
-* Stagger (http://code.google.com/p/stagger/) for audio file tags.
+* DeDuper is written using Python 2.7.
+* Mutagen (http://code.google.com/p/mutagen/) for audio file tags.

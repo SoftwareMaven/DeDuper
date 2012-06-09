@@ -3,18 +3,43 @@ import os.path
 
 import smhasher
 
+from mutagen.easyid3 import EasyID3
+from mutagen.flac import FLAC
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.ogg import OggFileType
+
+
 from .decorators import reify
 
 BIG_BLOCKSIZE = 16 * 1024 # 16k blocks for the full hash
 SMALL_BLOCKSIZE = 4 * 1024 # 4k blocks for the first block hash
 
+def _data_from_mp3(path):
+    tag = MP3(path, ID3=EasyID3)
+    return tag['artist'][0], tag['album'][0], tag['title'][0], tag.info.bitrate, int(tag.info.length)
+
+def _data_from_mp4(path):
+    tag = MP4(path)
+    return tag['\xa9ART'][0], tag['\xa9alb'][0], tag['\xa9nam'][0], tag.info.bitrate, int(tag.info.length)
+
+
+AUDIO_HANDLERS = { 'mp3': _data_from_mp3,
+                   'm4a': _data_from_mp4,
+                   'mp4': _data_from_mp4,
+                   'm4b': _data_from_mp4,
+                   'm4p': _data_from_mp4,
+                   'm4v': _data_from_mp4,
+                   }
+
 def get_wrapper_for_file(path):
     wrapper = None
-    if path.endswith('.mp3'):
+    extension = path.split('.')[-1]
+    if extension in AUDIO_HANDLERS:
         try:
-            wrapper = MP3Wrapper(path)
+            wrapper = AudioWrapper(path, handler=AUDIO_HANDLERS[extension])
         except Exception:
-            pass
+            import traceback; traceback.print_exc()
     if not wrapper:
         wrapper = GenericFileWrapper(path)
     return wrapper
@@ -63,8 +88,12 @@ class GenericFileWrapper:
                 blocks = blocks + 1 if blocks < 16 else 0
         return hash_
 
-class MP3Wrapper:
-    def __init__(self, path):
+class AudioWrapper(GenericFileWrapper):
+    def __init__(self, path, handler=None):
         self.path = path
-        #tag = stagger.read_tag(self.path)
-        #self.content = ':'.join((tag.artist, tag.album, tag.title))
+        tag_info = handler(path)
+        self.artist, self.album, self.title, self.bitrate, self.length = tag_info
+        self.size = self.bitrate
+        hash_info = ':'.join((self.artist, self.album, self.title,
+                              unicode(self.bitrate), unicode(self.length)))
+        self.hash = self.first_block_hash = hash(hash_info)
