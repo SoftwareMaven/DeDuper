@@ -9,7 +9,15 @@ BIG_BLOCKSIZE = 16 * 1024 # 16k blocks for the full hash
 SMALL_BLOCKSIZE = 4 * 1024 # 4k blocks for the first block hash
 
 def get_wrapper_for_file(path):
-    return GenericFileWrapper(path)
+    wrapper = None
+    if path.endswith('.mp3'):
+        try:
+            wrapper = MP3Wrapper(path)
+        except Exception:
+            pass
+    if not wrapper:
+        wrapper = GenericFileWrapper(path)
+    return wrapper
 
 class GenericFileWrapper:
     seed = 11223344
@@ -54,3 +62,9 @@ class GenericFileWrapper:
                 data = f.read(BIG_BLOCKSIZE)
                 blocks = blocks + 1 if blocks < 16 else 0
         return hash_
+
+class MP3Wrapper:
+    def __init__(self, path):
+        self.path = path
+        #tag = stagger.read_tag(self.path)
+        #self.content = ':'.join((tag.artist, tag.album, tag.title))

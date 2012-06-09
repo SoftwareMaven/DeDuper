@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
-dependencies = ['stagger','smhasher',]
-packages = ['deduper',]
+dependencies = ['mutagen','smhasher',]
+packages = find_packages()
 scripts = ['scripts/deduper',]
 setup(name='DeDuper',
       version='0.1',
